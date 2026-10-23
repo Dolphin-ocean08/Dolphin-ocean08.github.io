@@ -1,0 +1,22 @@
+# Butterfly 主题配置
+# 只写与主题默认值不同的部分，其余继承 node_modules/hexo-theme-butterfly/_config.yml
+# （Hexo 会把本文件深合并到主题默认配置上）
+
+menu:
+  首页: / || fas fa-home
+  归档: /archives/ || fas fa-archive
+  标签: /tags/ || fas fa-tags
+  分类: /categories/ || fas fa-folder-open
+
+avatar:
+  img: https://avatars.githubusercontent.com/u/343016386?v=4
+  effect: true
+
+favicon: https://avatars.githubusercontent.com/u/343016386?v=4
+
+social:
+  fab fa-github: https://github.com/Dolphin-ocean08 || Github || '#24292e'
+
+search:
+  use: local_search
+  placeholder: 搜索文章
