@@ -1,0 +1,488 @@
+/* ==========================================================================
+   FGO Ring Of Light · 动态壁纸层（Wallpaper Engine 2522870818）
+   --------------------------------------------------------------------------
+   原作品是 Wallpaper Engine 的 2D scene：3840×2160 底图 + waterflow 水波扭曲
+   + 5 组 light shafts 光束 + 循环 BGM。网页里不能直接跑 scene.pkg，这里把
+   工程里的资源解包后按原参数重放：
+
+     #wp-bg  固定在最底层：WebGL 画布（水波 + 光束）→ 静态图兜底 → 薄纱
+
+   本文件只负责「层」和 Butterfly 主题的透出适配，不参与正文排版；
+   JS 关掉、WebGL 不可用、减少动态、省流时，退回一张完整的静态壁纸。
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. 壁纸层
+   -------------------------------------------------------------------------- */
+
+#wp-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background-color: #c3d8ee;
+  contain: layout paint;
+}
+
+.wp-stage {
+  position: absolute;
+  inset: 0;
+}
+
+.wp-img,
+.wp-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.wp-img {
+  object-fit: cover;
+  object-position: 50% 42%;
+  /* 没有 JS 时直接显示静态壁纸 */
+  opacity: 1;
+}
+
+/* 有 JS 才做淡入，避免空白一帧 */
+.wp-js .wp-img {
+  opacity: 0;
+  transition: opacity 1.3s ease;
+}
+
+.wp-js .wp-img.is-ready {
+  opacity: 1;
+}
+
+/* WebGL 画布盖在静态图上，首帧画完才淡入，避免闪一下空屏 */
+.wp-canvas {
+  opacity: 0;
+  transition: opacity 1.6s ease;
+}
+
+.wp-canvas.is-ready {
+  opacity: 1;
+}
+
+/* 薄纱：上轻下重，让正文区域始终落在稳定的浅色底上 */
+.wp-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(250, 252, 255, 0.02) 0%,
+    rgba(250, 252, 255, 0.05) 30%,
+    rgba(250, 252, 255, 0.24) 58%,
+    rgba(250, 252, 255, 0.46) 80%,
+    rgba(250, 252, 255, 0.58) 100%
+  );
+}
+
+/* 暗角：把视线收在光环上，同时压住画面四角 */
+.wp-fade {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    124% 92% at 50% 42%,
+    rgba(10, 22, 40, 0) 52%,
+    rgba(10, 22, 40, 0.12) 86%,
+    rgba(10, 22, 40, 0.2) 100%
+  );
+  mix-blend-mode: multiply;
+}
+
+/* --------------------------------------------------------------------------
+   2. 主题表面：让页面「透」出壁纸
+   -------------------------------------------------------------------------- */
+
+html {
+  background-color: #cfe0f0;
+}
+
+body {
+  background: transparent !important;
+  background-image: none !important;
+}
+
+/* 卡片换成半透明的「磨砂纸」，正文仍然落在稳定的浅色底上 */
+:root {
+  --card-bg: rgba(255, 254, 252, 0.92);
+  --mark-bg: transparent;
+}
+
+#recent-posts .recent-post-item,
+#aside-content .card-widget,
+#post,
+#archive,
+#tag,
+#page,
+.post-copyright,
+.cardHover {
+  -webkit-backdrop-filter: blur(14px) saturate(108%);
+  backdrop-filter: blur(14px) saturate(108%);
+  box-shadow: 0 18px 42px -30px rgba(12, 30, 50, 0.5),
+    0 2px 6px rgba(12, 30, 50, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+/* 页头：整块透明，直接压在画面上 */
+#page-header {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* 主题默认给页头压 30% 黑，换成一层很淡的白雾，只负责托一下导航 */
+#page-header:not(.not-top-img):before {
+  background: linear-gradient(
+    180deg,
+    rgba(252, 253, 255, 0.34) 0%,
+    rgba(252, 253, 255, 0.11) 30%,
+    rgba(252, 253, 255, 0) 52%
+  ) !important;
+}
+
+/* 标题：亮底上用墨色，加一点白色柔光，避免糊在云里 */
+#site-title,
+#page-header #site-title {
+  color: #16222f !important;
+  text-shadow: 0 0 14px rgba(255, 255, 255, 0.5),
+    0 1px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+#site-subtitle,
+#page-header #site-subtitle {
+  color: #3a4c60 !important;
+  text-shadow: 0 0 16px rgba(255, 255, 255, 0.75) !important;
+}
+
+#site_social_icons .social-icon {
+  text-shadow: 0 0 14px rgba(255, 255, 255, 0.9);
+}
+
+#post-info .post-title,
+#page-header #post-info .post-title {
+  color: #16222f !important;
+  text-shadow: 0 0 16px rgba(255, 255, 255, 0.5) !important;
+}
+
+#post-info #post-meta,
+#post-info #post-meta a,
+#post-info #post-meta i,
+#post-info #post-meta time {
+  color: #3a4c60 !important;
+  text-shadow: 0 0 14px rgba(255, 255, 255, 0.85) !important;
+}
+
+/* 导航条：磨砂玻璃，墨色字 */
+#nav.show {
+  background: rgba(251, 253, 255, 0.44) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: 0 1px 0 rgba(18, 32, 48, 0.07);
+}
+
+#nav.show a,
+#nav.show .site-page,
+#nav.show .site-name,
+#nav.show i,
+#nav.show span {
+  color: #1b2a3a !important;
+}
+
+#nav.show .site-page:not(.child):after {
+  background-color: #1b2a3a !important;
+}
+
+/* 页脚：半透明深蓝，收住整个页面 */
+#footer {
+  background-color: rgba(28, 43, 60, 0.55) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  backdrop-filter: blur(12px) saturate(120%);
+}
+
+/* --------------------------------------------------------------------------
+   3. 音乐按钮
+   -------------------------------------------------------------------------- */
+
+.wp-sound {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  z-index: 40;
+  pointer-events: auto;
+  /* 没有 JS 时按钮点了也不会响，直接藏起来 */
+  display: none;
+}
+
+.wp-js .wp-sound {
+  display: block;
+}
+
+.wp-sound-btn {
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px 0 11px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  background: rgba(255, 255, 253, 0.74);
+  -webkit-backdrop-filter: blur(12px) saturate(130%);
+  backdrop-filter: blur(12px) saturate(130%);
+  color: #26384a;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  box-shadow: 0 8px 22px -12px rgba(18, 38, 60, 0.55);
+  transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.wp-sound-btn:hover {
+  background: rgba(255, 255, 255, 0.92);
+  transform: translateY(-1px);
+}
+
+.wp-sound-btn:focus-visible {
+  outline: 2px solid rgba(38, 90, 130, 0.55);
+  outline-offset: 3px;
+}
+
+.wp-sound-icon {
+  display: block;
+  fill: currentColor;
+  overflow: visible;
+}
+
+/* 未播放时给喇叭划一道斜线 */
+.wp-sound-icon .wp-slash {
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.wp-sound-btn[aria-pressed="true"] .wp-slash {
+  display: none;
+}
+
+.wp-sound-label {
+  white-space: nowrap;
+}
+
+/* 播放时外圈声波轻轻呼吸 */
+.wp-sound-btn[aria-pressed="true"] .wp-wave:nth-of-type(2),
+.wp-sound-btn[aria-pressed="true"] .wp-wave:nth-of-type(3) {
+  animation: wp-wave 2.4s ease-in-out infinite;
+}
+
+@keyframes wp-wave {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   4. 深色模式
+   -------------------------------------------------------------------------- */
+
+[data-theme="dark"] {
+  --card-bg: rgba(18, 20, 24, 0.8);
+}
+
+html[data-theme="dark"] {
+  background-color: #0b1119;
+}
+
+[data-theme="dark"] #wp-bg {
+  background-color: #0b1119;
+}
+
+[data-theme="dark"] .wp-img {
+  filter: brightness(0.58) saturate(0.92);
+}
+
+[data-theme="dark"] .wp-canvas {
+  filter: brightness(0.62) saturate(0.92);
+}
+
+[data-theme="dark"] .wp-veil {
+  background: linear-gradient(
+    180deg,
+    rgba(8, 12, 20, 0.26) 0%,
+    rgba(8, 12, 20, 0.38) 30%,
+    rgba(8, 12, 20, 0.58) 62%,
+    rgba(7, 10, 16, 0.76) 100%
+  );
+}
+
+[data-theme="dark"] .wp-fade {
+  background: radial-gradient(
+    124% 92% at 50% 42%,
+    rgba(0, 0, 0, 0) 48%,
+    rgba(0, 0, 0, 0.26) 88%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
+}
+
+[data-theme="dark"] #page-header:not(.not-top-img):before {
+  background: linear-gradient(
+    180deg,
+    rgba(6, 10, 18, 0.46) 0%,
+    rgba(6, 10, 18, 0.16) 30%,
+    rgba(6, 10, 18, 0) 52%
+  ) !important;
+}
+
+[data-theme="dark"] #site-title,
+[data-theme="dark"] #page-header #site-title {
+  color: #f1f6fc !important;
+  text-shadow: 0 0 30px rgba(0, 0, 0, 0.55), 0 1px 2px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="dark"] #site-subtitle,
+[data-theme="dark"] #page-header #site-subtitle {
+  color: #c9d6e4 !important;
+  text-shadow: 0 0 20px rgba(0, 0, 0, 0.6) !important;
+}
+
+[data-theme="dark"] #post-info .post-title,
+[data-theme="dark"] #page-header #post-info .post-title {
+  color: #f1f6fc !important;
+  text-shadow: 0 0 30px rgba(0, 0, 0, 0.55) !important;
+}
+
+[data-theme="dark"] #post-info #post-meta,
+[data-theme="dark"] #post-info #post-meta a,
+[data-theme="dark"] #post-info #post-meta i,
+[data-theme="dark"] #post-info #post-meta time {
+  color: #c2d0df !important;
+  text-shadow: 0 0 16px rgba(0, 0, 0, 0.6) !important;
+}
+
+[data-theme="dark"] #nav.show {
+  background: rgba(14, 18, 24, 0.66) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] #nav.show a,
+[data-theme="dark"] #nav.show .site-page,
+[data-theme="dark"] #nav.show .site-name,
+[data-theme="dark"] #nav.show i,
+[data-theme="dark"] #nav.show span {
+  color: #e7eef7 !important;
+}
+
+[data-theme="dark"] #footer {
+  background-color: rgba(8, 12, 18, 0.72) !important;
+}
+
+[data-theme="dark"] .wp-sound-btn {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(18, 22, 28, 0.66);
+  color: #dbe6f2;
+  box-shadow: 0 8px 22px -12px rgba(0, 0, 0, 0.9);
+}
+
+[data-theme="dark"] .wp-sound-btn:hover {
+  background: rgba(30, 36, 44, 0.85);
+}
+
+[data-theme="dark"] #recent-posts .recent-post-item,
+[data-theme="dark"] #aside-content .card-widget,
+[data-theme="dark"] #post,
+[data-theme="dark"] .cardHover {
+  box-shadow: 0 18px 42px -30px rgba(0, 0, 0, 0.85),
+    0 2px 6px rgba(0, 0, 0, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* --------------------------------------------------------------------------
+   5. 移动端
+   -------------------------------------------------------------------------- */
+
+@media screen and (max-width: 768px) {
+  .wp-img {
+    object-position: 50% 38%;
+  }
+
+  .wp-sound {
+    left: 12px;
+    bottom: 12px;
+  }
+
+  .wp-sound-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+    font-size: 11.5px;
+  }
+
+  .wp-sound-label {
+    display: none;
+  }
+
+  /* 手机上 backdrop-filter 开销大，退回几乎不透明的卡片 */
+  #recent-posts .recent-post-item,
+  #aside-content .card-widget,
+  #post,
+  .cardHover {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  :root {
+    --card-bg: rgba(255, 254, 252, 0.94);
+  }
+
+  [data-theme="dark"] {
+    --card-bg: rgba(18, 20, 24, 0.92);
+  }
+
+  .wp-sound-btn {
+    background: rgba(255, 255, 253, 0.82);
+  }
+
+  [data-theme="dark"] .wp-sound-btn {
+    background: rgba(18, 22, 28, 0.78);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   6. 省电、省流、减少动态
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .wp-img {
+    transition: none;
+  }
+
+  .wp-canvas {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-data: reduce) {
+  .wp-canvas {
+    display: none;
+  }
+}
+
+/* 不支持 backdrop-filter 的老浏览器：卡片回到不透明，保证可读 */
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  :root {
+    --card-bg: #fffdfa;
+  }
+
+  [data-theme="dark"] {
+    --card-bg: #14161a;
+  }
+}
