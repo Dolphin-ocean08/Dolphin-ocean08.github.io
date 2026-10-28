@@ -1,0 +1,26 @@
+@charset "UTF-8";
+/* 头像：默认静止，鼠标悬停时才旋转 */
+
+@keyframes avatar-hover-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* 覆盖主题内置的「悬停瞬间翻转 360°」（aside.styl 里的 .avatar-img img:hover），
+   否则它会和下面的持续旋转叠在一起，看起来会抖一下 */
+.avatar-img img:hover {
+  -webkit-transform: none !important;
+  transform: none !important;
+}
+
+/* 悬停：2 秒一圈，匀速，一直转；移开鼠标就停 */
+.avatar-img:hover {
+  animation: avatar-hover-spin 2s linear infinite;
+}
+
+/* 系统开启「减少动态效果」时不转 */
+@media (prefers-reduced-motion: reduce) {
+  .avatar-img:hover {
+    animation: none;
+  }
+}

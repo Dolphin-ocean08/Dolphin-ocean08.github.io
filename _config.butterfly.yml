@@ -10,7 +10,8 @@ menu:
 
 avatar:
   img: https://avatars.githubusercontent.com/u/343016386?v=4
-  effect: true
+  # false = 页面上不再一直转；悬停时的旋转交给 source/custom/avatar.css
+  effect: false
 
 favicon: https://avatars.githubusercontent.com/u/343016386?v=4
 
@@ -20,3 +21,8 @@ social:
 search:
   use: local_search
   placeholder: 搜索文章
+
+# 自定义样式 / 脚本注入
+inject:
+  head:
+    - '<link rel="stylesheet" href="/custom/avatar.css">'
