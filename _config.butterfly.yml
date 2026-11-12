@@ -26,5 +26,5 @@ search:
 inject:
   head:
     - '<link rel="stylesheet" href="/custom/avatar.css">'
-    bottom:
+  bottom:
     - '<div style="position:fixed;left:20px;bottom:20px;z-index:9999;width:330px;height:86px;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.35);"><iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width="330" height="86" style="display:block;border:0" src="//music.163.com/outchain/player?type=0&id=18558771019&auto=0&height=66"></iframe></div>'
